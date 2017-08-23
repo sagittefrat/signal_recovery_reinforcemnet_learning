@@ -139,12 +139,13 @@ def select_action(Q,s,policy_type,beta,exploration_rate,policy):
 
 	action_probs = policy(s)
 	if (1 - exploration_rate) < np.random.uniform(0, 1):
-		return np.random.choice(np.arange(len(action_probs)))
+		a= np.random.choice(np.arange(len(action_probs)))
+
 	else:
 		# Select the first action in this episode
 
 		if policy_type == 'softmax':
-			a = select_a_with_softmax(Q_estimator[s,:], beta=beta)
+			a = select_a_with_softmax(Q[s,:], beta=beta)
 		elif policy_type == 'epsilon_greedy':
 			a = np.random.choice(np.arange(len(action_probs)), p=action_probs)
 		elif policy_type == 'random':
@@ -173,7 +174,8 @@ def make_epsilon_greedy_policy(Q, epsilon, num_actions):
 	def policy_fn(observation):
 		A = np.ones(num_actions, dtype=float) * epsilon / num_actions
 		q_values = Q[observation,:]
-		best_action = 1-np.argmin(q_values)
+		print 'q_values', q_values
+		best_action = np.argmin(q_values)
 		print 'best_action',best_action
 		print 'A',A
 		A[best_action] += (1.0 - epsilon)

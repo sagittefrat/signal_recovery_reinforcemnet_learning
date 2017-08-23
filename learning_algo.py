@@ -19,6 +19,7 @@ def learn():
 	#epsilon_decay=1
 	beta=0.01
 	policy_type='epsilon_greedy'
+	#policy_type='softmax'
 	discount_factor=0.9
 	num_steps=7
 
@@ -34,6 +35,8 @@ def learn():
 	# create initial state - a random node from the graph:
 	state_name, state_features=network.create_state(int(random.random()*num_nodes))
 
+	#if no FA:
+	state_features=state_name
 	
 	# create the initial probability:
 	policy = make_epsilon_greedy_policy(
@@ -94,6 +97,9 @@ def learn():
 
 		
 		state_name,state_features=next_state
+		#if no FA:
+		state_features=state_name
+		
 		action=next_action
 		alpha*=alpha_decay
 		exploration*=exploration_decay	
