@@ -55,7 +55,7 @@ class Network():
 			state_features=(state_neighbors.count(5),state_neighbors.count(1))
 			self.discovered_states_dict[state_name]=state_features
 		
-		print '\n&&&&&&&&&&&&&&& sampled_nodes: &&&&&&&&&&&&&&&&&&&\n %s\n \n&&&&&&&&&&&&&&&&&&& discovered_edges: &&&&&&&&&&&&&&&&&&&\n %s' %(self.sampled_nodes,self.discovered_edges)
+		print '\n&&&&&&&&&&&&&&& sampled_nodes: &&&&&&&&&&&&&&&&&&&\n %s\n \n&&&&&&&&&&&&&&&&&&& discovered_nodes: &&&&&&&&&&&&&&&&&&&\n %s' %(self.sampled_nodes,self.discovered_nodes)
 		return state_name, state_features
 '''
 This func define what is the function to do mini,aztion on :
@@ -65,10 +65,8 @@ def l1_func(x,network):
 
 	to_minimize=[]
 
-	for node_i in network.discovered_nodes:
-		for node_j in network.discovered_nodes:
-			if (node_j,node_i) in network.discovered_edges:
-				to_minimize.append(network.discovered_edges[(node_j,node_i)]*abs(x[node_i]-x[node_j]))
+	for (node_j,node_i) in network.discovered_edges:
+		to_minimize.append(network.discovered_edges[(node_j,node_i)]*abs(x[node_i]-x[node_j]))
 	
 	return np.sum(to_minimize)
 
@@ -91,28 +89,28 @@ def predict(x,network):
 	print sol.x
 	return sol
 
-def generate_graph():
+def generate_graph(num_nodes=30,num_clusters=4, w=(1,5),num_nodes_inside_cluster=140,num_nodes_outside_cluster=9):
 	
 	edges_list=[]
 	edges_weight_dict={}
 
-	clust=[random.randint(1,4) for p in xrange(30)]
+	clust=[random.randint(1,num_clusters) for p in xrange(num_nodes)]
 
-	for i in xrange(30):
-		for j in xrange(i+1,30):
+	for i in xrange(num_nodes):
+		for j in xrange(i+1,num_nodes):
 			if clust[i]==clust[j]:
 				edge=(i,j)
 				edges_list.append(edge)
-				edges_weight_dict[edge]=5
+				edges_weight_dict[edge]=w[1]
 
 
 	random.shuffle(edges_list)
-	edges_list=edges_list[:-20]
+	edges_list=edges_list[:num_nodes_inside_cluster]
 
-	for i in xrange(9):
-		edge=tuple(random.sample(xrange(30), 2))
+	for i in xrange(num_nodes_outside_cluster):
+		edge=tuple(random.sample(xrange(num_nodes), 2))
 		if clust[edge[0]]!=clust[edge[1]]:
-			edges_weight_dict[edge]=1
+			edges_weight_dict[edge]=w[0]
 			edges_list.append(edge)
 
 
@@ -140,7 +138,7 @@ def generate_graph():
 def select_action(Q,s,policy_type,beta,exploration_rate,policy):
 
 	action_probs = policy(s)
-	if (1 - exploration_rate) <= np.random.uniform(0, 1):
+	if (1 - exploration_rate) < np.random.uniform(0, 1):
 		return np.random.choice(np.arange(len(action_probs)))
 	else:
 		# Select the first action in this episode
@@ -154,6 +152,7 @@ def select_action(Q,s,policy_type,beta,exploration_rate,policy):
 		else:
 			raise ValueError("Invalid policy_type: {}".format(policy_type))
 		
+		print 'a', a
 		return a
 
 
@@ -174,7 +173,7 @@ def make_epsilon_greedy_policy(Q, epsilon, num_actions):
 	def policy_fn(observation):
 		A = np.ones(num_actions, dtype=float) * epsilon / num_actions
 		q_values = Q[observation,:]
-		best_action = np.argmin(q_values)
+		best_action = 1-np.argmin(q_values)
 		print 'best_action',best_action
 		print 'A',A
 		A[best_action] += (1.0 - epsilon)
@@ -212,7 +211,7 @@ def error(x,network):
 
 	# calculate error by NMSE:
 	sum=0
-	for node in network.sampled_nodes:
+	for node in network.discovered_nodes:
 		node_value=network.graph[node]
 		sum+=np.square(x[node]-node_value)/np.square(node_value)	
 	

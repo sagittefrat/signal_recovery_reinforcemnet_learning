@@ -4,7 +4,7 @@ from options import *
 
 
 # create the problem graph:
-network=Network(generate_graph())
+network=Network(generate_graph(30,4))
 
 
 def learn():
@@ -27,7 +27,7 @@ def learn():
 	num_actions=network.num_actions
 	
 	# create Q table for discrete state space and discrete actions:
-	average_mistake=(3*30*5)/2
+	average_mistake=(3*num_nodes*5)/2
 	Q=np.zeros((num_nodes,num_actions))+average_mistake
 
 	
@@ -48,10 +48,9 @@ def learn():
 		# guess the initial x[i] of the discovered nodes:
 		x=np.random.rand(num_nodes)
 		possible_values=[]
-		for node in network.discovered_nodes:
-			if node in network.sampled_nodes:
-				possible_values.append(network.graph[node])
-				x[node]=network.graph[node]
+		for node in network.sampled_nodes:
+			possible_values.append(network.graph[node])
+			x[node]=network.graph[node]
 		possible_values.sort()
 		
 		#update X values to be 
@@ -67,7 +66,7 @@ def learn():
 
 		print '\n&&&&&&&&&&&&&&&&&&& TV: %s &&&&&&&&&&&&&&&&&&&' %tv
 
-		next_action=select_action(Q,state_features,policy_type,beta,epsilon,policy)
+		next_action=select_action(Q,state_features,policy_type,beta,epsilon*0.9,policy)
 
 		if exploration<random.random():
 			next_state=network.create_state(int(random.random()*num_nodes))
@@ -75,13 +74,19 @@ def learn():
 		
 		else:
 			discovered_edges=copy(network.discovered_edges)
+
+			edge_to_sample=None
 			for edge in discovered_edges:
 				if state_name in edge:
 					if network.edges_weight_dict[edge]==action or 5-network.edges_weight_dict[edge]==action:
-						next_state=network.create_state(edge[1] if edge[0]==state_name else edge[0])
-						break
-					else: 
-						next_state=network.create_state(int(random.random()*num_nodes))
+						edge_to_sample=edge
+						
+			if edge_to_sample==None: 
+				next_state=network.create_state(int(random.random()*num_nodes))
+			else:
+				next_state=network.create_state(edge[1] if edge[0]==state_name else edge[0])
+
+				
 
 		
 		# Update the function approximator using our target
@@ -92,11 +97,12 @@ def learn():
 		action=next_action
 		alpha*=alpha_decay
 		exploration*=exploration_decay	
-		print 'Q',Q
+		#print 'Q',Q
 		raw_input()
 
 	####### end of epiosde:
 	empirical_error=error(sol.x,network)
+	print 'lenght of discovered nodes:', len(network.discovered_nodes) 
 	print 'clust',network.graph
 	print 'x', x
 	print 'empirical error:',empirical_error
