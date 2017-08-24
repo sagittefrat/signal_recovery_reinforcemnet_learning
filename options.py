@@ -40,7 +40,7 @@ class Network():
 		else:
 			self.sampled_nodes.append(state_name)
 			state_neighbors=[]
-			seen_nodes=[]
+			seen_nodes=[x for x in self.discovered_nodes]
 			for edge in self.edges_weight_dict:
 				if state_name in edge:
 					edges_weight=self.get_weight(edge)
