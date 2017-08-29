@@ -77,9 +77,12 @@ class Network():
 				if (u,v) in self.edges_weight_dict: 
 					weights_neighborhood.append((self.edges_weight_dict[(u,v)]*self.edges_weight_dict[edge1]*self.edges_weight_dict[edge2])**0.333)
 		
+		weights_neighborhood.sort()
 		cc_state=sum(weights_neighborhood)/(deg_state*(deg_state-1))
 
-		return np.array([cc_state, state_neighbors.count(5),state_neighbors.count(1)])
+
+
+		return np.array([cc_state, weights_neighborhood[-1],weights_neighborhood[0]])
 
 
 class Q_estimator():
@@ -115,7 +118,7 @@ class q_nn(Q_estimator):
 		Q_estimator.__init__(self,state_size, action_size)
 		# These are hyper parameters for the Policy Gradient
 		self.discount_factor = 0.9
-		self.learning_rate = 0.01
+		self.learning_rate = 0.001
 		#self.hidden1 = 24
 		#self.hidden2 = 24
 
@@ -162,7 +165,8 @@ class q_nn(Q_estimator):
 
 		discounted_rewards = self.discount_rewards(self.rewards)
 		discounted_rewards -= np.mean(discounted_rewards)
-		discounted_rewards /= np.std(discounted_rewards)
+		if np.std(discounted_rewards)>0:
+			discounted_rewards /= np.std(discounted_rewards)
 
 		update_inputs = np.zeros((episode_length, self.state_size))
 		advantages = np.zeros((episode_length, self.action_size))
@@ -179,6 +183,7 @@ class q_nn(Q_estimator):
 		self.states.append(state_features)
 		self.rewards.append(reward)
 		self.actions.append(action)
+		print ' rewards inside append sample: ', self.rewards
 
 
 class q_table(Q_estimator):
@@ -251,12 +256,12 @@ def predict(x,network):
 		constraints.append({'type': 'eq', 'fun' : lambda x: np.array(x[node] - network.graph[node])})
 	constraints_tuple = tuple(constraints)
 
-	sol=optimize.minimize(l1_func, x,method='SLSQP', args=(network,),constraints=constraints_tuple, tol=1e-4)
+	sol=optimize.minimize(l1_func, x, method='SLSQP', args=(network,), constraints=constraints_tuple, tol=1e-3)
 	
 	print sol.x
 	return sol
 
-def generate_graph(num_nodes=30,num_clusters=4, w=(1,5),num_nodes_inside_cluster=140,num_nodes_outside_cluster=9):
+def generate_graph(num_nodes=30, num_clusters=4, w=(1,5), num_nodes_inside_cluster=140, num_nodes_outside_cluster=9):
 	
 	edges_list=[]
 	edges_weight_dict={}
@@ -282,14 +287,6 @@ def generate_graph(num_nodes=30,num_clusters=4, w=(1,5),num_nodes_inside_cluster
 
 
 
-	G = nx.DiGraph()
-	G.add_edges_from(edges_list)
-	pos = nx.spring_layout(G)
-	nx.draw_networkx(G)
-	plt.savefig('./network.png')
-	#plt.show()
-
-
 	with open('network_graph.csv', 'wb') as csvfile:
 		writer = csv.writer(csvfile, delimiter=',',
 					quoting=csv.QUOTE_MINIMAL)
@@ -311,17 +308,35 @@ def get_graph(network_graph='network_graph.csv',network_clust='network_clust.csv
 	edges_weight_dict={}
 	clust=[]
 
-	read_graph=pd.read_csv(network_graph, header=None)
-	
-	for i in xrange(len(read_graph)):
-		edges_weight_dict[(read_graph.ix[i, 0],read_graph.ix[i , 1])]=read_graph.ix[i , 2]
-	#print edges_weight_dict
-	
-	read_cluster=pd.read_csv(network_clust, header=None)
 
-	for i in xrange(len(read_cluster.ix[0,:])):
-		clust.append(read_cluster.ix[0,i])
+	if network_graph[-3:]=='csv':
 
+		read_graph=pd.read_csv(network_graph, header=None)
+		for i in xrange(len(read_graph)):
+			edges_weight_dict[(read_graph.ix[i, 0],read_graph.ix[i , 1])]=read_graph.ix[i , 2]
+
+		read_cluster=pd.read_table(network_clust,sep=',', header=None)
+		for i in xrange(len(read_cluster.ix[0,:])):
+			clust.append(read_cluster.ix[0,i])
+
+	elif network_graph[-3:]=='dat':
+
+		read_graph=pd.read_table(network_graph, sep='\s+', header=None)
+		for i in xrange(len(read_graph)):
+			edges_weight_dict[(read_graph.ix[i, 0]-1,read_graph.ix[i , 1]-1)]=np.round(read_graph.ix[i , 2])
+		
+		read_cluster=pd.read_table(network_clust, sep=',', header=None)
+		for i in xrange(len(read_cluster.ix[:,1])):
+			clust.append(read_cluster.ix[i,1])
+
+
+	edges_list=edges_weight_dict.keys()
+
+	G = nx.DiGraph()
+	G.add_edges_from(edges_list)
+	pos = nx.spring_layout(G)
+	nx.draw_networkx(G)
+	plt.savefig('./network.png')
 	
 	return (clust,edges_weight_dict)
 

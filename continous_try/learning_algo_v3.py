@@ -1,8 +1,8 @@
 # coding=utf-8
 
 '''
-This is the code for the state features represented as: ( CC(v), number of neighbrs with w=5, number of neighbrs with w=1 )
-with sampling 12 nodes out of 30 of 4 clusters, usually we discover all edges, and then, the empirical error is around 11.5
+This is the code for the state features represented as: ( CC(v), min weight of neighbours, max weight of neighbours )
+on the LFR graph from n-lasso paper
 we need to integrate with the minimizing TV costumized algorithm
 '''
 
@@ -13,8 +13,8 @@ from options_v3 import *
 #network = Network(generate_graph(30,4))
 
 # use the graph already created:
-network = Network (get_graph())
-
+network = Network (get_graph('/Users/sagite1/Desktop/SLPCode/LFR/c30_4/network.dat', '/Users/sagite1/Desktop/SLPCode/LFR/c30_4/community.dat'))
+#network = Network (get_graph())
 def learn():
 
 
@@ -65,11 +65,11 @@ def learn():
 		edge_to_sample=[]
 		for edge in discovered_edges:
 			if state_name in edge:
-				if network.edges_weight_dict[edge]==action or 5-network.edges_weight_dict[edge]==action:
+				if network.edges_weight_dict[edge]==action:
 					edge_to_sample.append(edge)
 					
 		if edge_to_sample==[]: 
-			#action=num_actions
+			action=num_actions
 			next_state=network.create_state(int(random.random()*num_nodes))
 		else:
 			#print edge_to_sample
@@ -97,7 +97,7 @@ def learn():
 		sol= predict(x,network)
 		tv=sol.fun
 
-		Q.append_sample(state_name,state_features, action, tv)
+		Q.append_sample(state_name,state_features, action, -tv)
 		Q.update_q(next_state)
 
 		print '\n&&&&&&&&&&&&&&&&&&& TV: %s &&&&&&&&&&&&&&&&&&&' %tv	
@@ -105,6 +105,9 @@ def learn():
 		print  'state name: %s, state features: %s action: %s, next state" %s '  %(state_name, state_features, action, next_state[0])
 		
 		state_name,state_features=next_state
+
+		print 'number of discovered nodes:', len(network.discovered_nodes) 
+
 		
 		#alpha*=alpha_decay
 		#exploration*=exploration_decay	
@@ -113,7 +116,6 @@ def learn():
 	####### end of epiosde:
 	#Q.model.save_weights("./save_model/signal_recovery_model.h5")
 	empirical_error=error(sol.x,network)
-	print 'lenght of discovered nodes:', len(network.discovered_nodes) 
 	print 'clust',network.graph
 	print 'x', x
 	print 'empirical error:',empirical_error
