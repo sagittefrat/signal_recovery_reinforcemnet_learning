@@ -10,11 +10,12 @@ from options_v3 import *
 
 
 # create the problem graph:
+#network = Network(generate_graph(num_nodes=2000, num_clusters=30, w=(1,5), num_nodes_inside_cluster=1000, num_nodes_outside_cluster=100))
 #network = Network(generate_graph(30,4))
 
 # use the graph already created:
-network = Network (get_graph('/Users/sagite1/Desktop/SLPCode/LFR/c30_4/network.dat', '/Users/sagite1/Desktop/SLPCode/LFR/c30_4/community.dat'))
-#network = Network (get_graph())
+#network = Network (get_graph('../SLPCode/LFR/c30_4/network.dat', '../SLPCode/LFR/c30_4/community.dat'))
+network1 = Network (get_graph())
 def learn():
 
 
@@ -34,91 +35,95 @@ def learn():
 	#gamma=0.9
 
 	# the problem size:
-	num_nodes=network.num_nodes
-	num_actions=network.num_actions
+	num_nodes=network1.num_nodes
+	num_actions=network1.num_actions
 	
 	# create Q table for discrete state space and discrete actions:
 	
 
 	Q=make_Q(num_nodes, mode='continous', state_size=3, action_size=num_actions+1)
 	
+	for i in xrange(11):
+		network = Network (get_graph())
 	
-	# create initial state - a random node from the graph:
-	state_name, state_features=network.create_state(int(random.random()*num_nodes))
-	print 'initial state: %s' %state_name
-	
-	# start the graph walk - choosing the best next action by following the RL best policy:
-	for step in xrange(num_steps):
-		print '\n&&&&&&&&&&&&&&&&&&& step: %s &&&&&&&&&&&&&&&&&&&' %step
-	
-
-		action=Q.get_action(state_name, state_features)
-
-		'''if exploration<random.random():
-			next_state=network.create_state(int(random.random()*num_nodes))
-			action=num_actions
-			print '\n&&&&&&&&&&&&&&&&&&&  random_action!, next state: %s &&&&&&&&&&&&&&&&&&& ' %next_state[0]
+		# create initial state - a random node from the graph:
+		state_name, state_features=network.create_state(int(random.random()*num_nodes))
+		print 'initial state: %s' %state_name
 		
-		else:'''
-		discovered_edges=copy(network.discovered_edges)
-
-		edge_to_sample=[]
-		for edge in discovered_edges:
-			if state_name in edge:
-				if network.edges_weight_dict[edge]==action:
-					edge_to_sample.append(edge)
-					
-		if edge_to_sample==[]: 
-			action=num_actions
-			next_state=network.create_state(int(random.random()*num_nodes))
-		else:
-			#print edge_to_sample
-			random.shuffle(edge_to_sample)
-			edge_to=edge_to_sample[0]
-			#print edge_to
-			next_state=network.create_state(edge_to[1] if edge_to[0]==state_name else edge_to[0])
-
-
-		# guess the initial x[i] of the discovered nodes:
-		x=np.random.rand(num_nodes)
-		possible_values=[]
-		for node in network.sampled_nodes:
-			possible_values.append(network.graph[node])
-			x[node]=network.graph[node]
-		possible_values.sort()
+		# start the graph walk - choosing the best next action by following the RL policy:
+		for step in xrange(num_steps):
+			print '\n&&&&&&&&&&&&&&&&&&& step: %s &&&&&&&&&&&&&&&&&&&' %step
 		
-		#update X values to be 
-		for node in network.discovered_nodes:
-			if node not in network.sampled_nodes:
-				x[node]=x[node]*(possible_values[-1]-possible_values[0])+possible_values[0]
+
+			action=Q.get_action(state_name, state_features)
+
+			'''if exploration<random.random():
+				next_state=network.create_state(int(random.random()*num_nodes))
+				action=num_actions
+				print '\n&&&&&&&&&&&&&&&&&&&  random_action!, next state: %s &&&&&&&&&&&&&&&&&&& ' %next_state[0]
+			
+			else:'''
+			discovered_edges=copy(network.discovered_edges)
+
+			edge_to_sample=[]
+			for edge in discovered_edges:
+				if state_name in edge:
+					if network.edges_weight_dict[edge]==action:
+						edge_to_sample.append(edge)
+						
+			if edge_to_sample==[]: 
+				action=num_actions
+				next_state=network.create_state(int(random.random()*num_nodes))
+			else:
+				#print edge_to_sample
+				random.shuffle(edge_to_sample)
+				edge_to=edge_to_sample[0]
+				#print edge_to
+				next_state=network.create_state(edge_to[1] if edge_to[0]==state_name else edge_to[0])
 
 
-		# solve the TV optimization problem with the initial guess: 
-		sol= predict(x,network)
-		tv=sol.fun
+			# guess the initial x[i] of the discovered nodes:
+			x=np.random.rand(num_nodes)
+			possible_values=[]
+			for node in network.sampled_nodes:
+				possible_values.append(network.graph[node])
+				x[node]=network.graph[node]
+			possible_values.sort()
+			
+			#update X values to be 
+			for node in network.discovered_nodes:
+				if node not in network.sampled_nodes:
+					x[node]=x[node]*(possible_values[-1]-possible_values[0])+possible_values[0]
 
-		Q.append_sample(state_name,state_features, action, -tv)
-		Q.update_q(next_state)
 
-		print '\n&&&&&&&&&&&&&&&&&&& TV: %s &&&&&&&&&&&&&&&&&&&' %tv	
+			# solve the TV optimization problem with the initial guess: 
+			sol= predict(x,network)
+			tv=sol.fun
 
-		print  'state name: %s, state features: %s action: %s, next state" %s '  %(state_name, state_features, action, next_state[0])
-		
-		state_name,state_features=next_state
+			Q.append_sample(state_name,state_features, action, -tv)
+			Q.update_q(next_state)
 
-		print 'number of discovered nodes:', len(network.discovered_nodes) 
+			print '\n&&&&&&&&&&&&&&&&&&& TV: %s &&&&&&&&&&&&&&&&&&&' %tv	
 
-		
-		#alpha*=alpha_decay
-		#exploration*=exploration_decay	
-		#raw_input()
+			print  'state name: %s, state features: %s action: %s, next state" %s '  %(state_name, state_features, action, next_state[0])
+			
+			state_name,state_features=next_state
 
-	####### end of epiosde:
-	#Q.model.save_weights("./save_model/signal_recovery_model.h5")
-	empirical_error=error(sol.x,network)
+			print 'number of discovered nodes:', len(network.discovered_nodes) 
+
+			
+			#alpha*=alpha_decay
+			#exploration*=exploration_decay	
+			#raw_input()
+
+		####### end of epiosde:
+		#Q.model.save_weights("./save_model/signal_recovery_model.h5")
+		empirical_error=error(sol.x,network)
+		print 'empirical error:',empirical_error
+		raw_input()
 	print 'clust',network.graph
 	print 'x', x
-	print 'empirical error:',empirical_error
+	#print 'empirical error:',empirical_error
 	print 'sum(clust-x):',np.sum(abs(network.graph-sol.x))
 
 

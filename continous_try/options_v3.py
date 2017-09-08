@@ -1,3 +1,5 @@
+#inspired by: https://github.com/rlcode/reinforcement-learning/blob/a497d719e3ecdd254e6620cf4f4b9afb0524b099/2-cartpole/3-reinforce/cartpole_reinforce.py
+
 
 import csv
 import random 
@@ -77,12 +79,12 @@ class Network():
 				if (u,v) in self.edges_weight_dict: 
 					weights_neighborhood.append((self.edges_weight_dict[(u,v)]*self.edges_weight_dict[edge1]*self.edges_weight_dict[edge2])**0.333)
 		
-		weights_neighborhood.sort()
+		state_neighbors.sort()
 		cc_state=sum(weights_neighborhood)/(deg_state*(deg_state-1))
 
 
 
-		return np.array([cc_state, weights_neighborhood[-1],weights_neighborhood[0]])
+		return np.array([cc_state, state_neighbors.count(1), state_neighbors.count(5)])
 
 
 class Q_estimator():
@@ -106,7 +108,8 @@ class Q_estimator():
 		running_add = 0
 		for t in reversed(range(0, len(rewards))):
 			running_add = running_add * self.discount_factor + rewards[t]
-			discounted_rewards[t] = running_add
+			discounted_rewards[t] = running_add/(t+1)
+		print 'discounted_rewards', discounted_rewards 
 		return discounted_rewards
 
 
@@ -162,6 +165,7 @@ class q_nn(Q_estimator):
 	# update policy network every episode
 	def update_q(self,next_state=None):
 		episode_length = len(self.states)
+		print 'episode_length: ',episode_length
 
 		discounted_rewards = self.discount_rewards(self.rewards)
 		discounted_rewards -= np.mean(discounted_rewards)
