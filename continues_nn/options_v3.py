@@ -115,11 +115,7 @@ class Q_estimator():
 		for t in reversed(range(0, len(rewards))):
 			running_add = running_add * self.discount_factor + rewards[t]
 			discounted_rewards[t] = running_add/(t+1)
-<<<<<<< HEAD:continous_try/options_v4.py
 		#print 'discounted_rewards', discounted_rewards 
-=======
-		print 'discounted_rewards', discounted_rewards 
->>>>>>> 63da25b39741bce3b53089243d64c374abd9a324:continous_try/options_v3.py
 		return discounted_rewards
 
 
@@ -175,7 +171,6 @@ class q_nn(Q_estimator):
 		#print 'states:', self.states
 		#print 'rewards', self.rewards
 		episode_length = len(self.states)
-		print 'episode_length: ',episode_length
 
 		discounted_rewards = self.discount_rewards(self.rewards)
 		#print 'discounted_rewards', discounted_rewards

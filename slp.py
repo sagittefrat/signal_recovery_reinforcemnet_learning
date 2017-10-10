@@ -52,7 +52,7 @@ def sparse_label_prop (D, sampling_set, sampling_vals, MAX_ITER, epsilon):
 	#get the value of sampled nodes:
 	j=0
 	for i in sampling_set:
-		xk[sampling_set] = sampling_vals[j]
+		xk[j] = sampling_vals[i]
 		j+=1
 
 	k = 1
@@ -74,7 +74,7 @@ def sparse_label_prop (D, sampling_set, sampling_vals, MAX_ITER, epsilon):
 		xk1 = r
 		j=0
 		for i in sampling_set:
-			xk[sampling_set] = sampling_vals[j]
+			xk[j] = sampling_vals[i]
 			j+=1
 		
 		# Step 4 
