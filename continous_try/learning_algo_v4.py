@@ -39,7 +39,7 @@ def learn():
 		
 
 			action=Q.get_action(state_name, state_features)
-			#print 'action chosen:',action,
+			print 'action chosen:',action,
 			discovered_edges=copy(network.discovered_edges)
 
 			action=action%5
