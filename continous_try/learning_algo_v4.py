@@ -24,7 +24,8 @@ def learn():
 	num_actions=network1.num_actions
 	
 	
-	Q=make_Q(num_nodes, mode='continous', state_size=3, action_size=num_actions+1)
+	#Q=make_Q(num_nodes, mode='continous', state_size=3, action_size=num_actions+1)
+	Q=PolicyGradient(n_actions=num_actions, n_features=3, learning_rate=0.02, reward_decay=0.995,)
 	
 	for epiosde in xrange(num_episodes):
 		network = Network (get_graph())
@@ -36,20 +37,19 @@ def learn():
 		# start the graph walk - choosing the best next action by following the RL policy:
 		for step in xrange(num_steps):
 			#print '\n&&&&&&&&&&&&&&&&&&& step: %s &&&&&&&&&&&&&&&&&&&' %step
-		
 
 			action=Q.get_action(state_name, state_features)
 			print 'action chosen:',action,
 			discovered_edges=copy(network.discovered_edges)
 
-			action=action%5
+			action=action%1000
 			edge_to_sample=[]
 			dif_action_to_sample=[]
 			dif_action=1-action
 			for edge in discovered_edges:
 				if state_name in edge:
 					# if ther's an adge then the weight can be only 0/1
-					if network.edges_weight_dict[edge]%5==action :
+					if network.edges_weight_dict[edge]%1000==action :
 						edge_to_sample.append(edge) 
 						#print 'found edge to sample', edge
 
@@ -57,16 +57,17 @@ def learn():
 						dif_action_to_sample.append(edge) 
 					
 						
-			if action==2: next_state=network.create_state(int(random.random()*num_nodes))
+			if action==num_actions	: next_state=network.create_state(int(random.random()*num_nodes))
 			# IF THERE IS NO MAtching weight then choose the other action 0/1 w.p 0.5
 			elif edge_to_sample==[]:
 				if random.random()<0.33:
+					action=dif_action
 					random.shuffle(dif_action_to_sample)
 					edge_to=dif_action_to_sample[0]
 					next_state=network.create_state(edge_to[1] if edge_to[0]==state_name else edge_to[0])
 
 				else:
-					#action=num_actions
+					action=num_actions
 					next_state=network.create_state(int(random.random()*num_nodes))
 					
 			
@@ -76,10 +77,6 @@ def learn():
 				next_state=network.create_state(edge_to[1] if edge_to[0]==state_name else edge_to[0])
 
 		
-				
-			#print 'action taken, next state:',action, next_state[0]
-			#print 'edge_to_sample:', edge_to_sample
-
 			# guess the initial x[i] of the discovered nodes:
 			x=np.random.rand(num_nodes)
 			possible_values=[]
@@ -88,8 +85,7 @@ def learn():
 				x[node]=network.graph[node]
 			possible_values.sort()
 			(min_val,max_val)=(possible_values[-1],possible_values[0])
-			#print '(min_val,max_val)', (min_val,max_val)
-			
+					
 			#update X values to be 
 			for node in network.discovered_nodes:
 				if node not in network.sampled_nodes:
@@ -107,18 +103,12 @@ def learn():
 			prev_tv=np.sum(to_minimize)
 
 
-			
-			#print '\n&&&&&&&&&&&&&&&&&&& TV: %s &&&&&&&&&&&&&&&&&&&' %tv
-			#tv = prev_tv-sol.fun
-			#prev_tv=sol.fun
-
-			Q.append_sample(state_name,state_features, action, 1/(tv+0.000000001))
-			#Q.update_q(next_state)
-
+		
+			#Q.append_sample(state_name,state_features, action, 1/(tv+0.000000001))
+			Q.store_transition(state_name,state_features, action, 1/(tv+0.000000001))
 
 			#print '\n&&&&&&&&&&&&&&&&&&& TV: %s &&&&&&&&&&&&&&&&&&&' %tv	
 
-			#print  'state name: %s, state features: %s action: %s, next state" %s '  %(state_name, state_features, action, next_state[0])
 			
 			state_name,state_features=next_state
 
